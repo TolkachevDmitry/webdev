@@ -253,24 +253,32 @@ def change_pass():
         old_password = request.form.get('old_password')
         new_password = request.form.get('new_password')
         new1_password = request.form.get('new1_password')
-        msg = ''
+        errors = {}
 
-        # Проверка нового пароля
-        if len(new_password) < 8 or len(new_password) > 128 or not any(char.islower() for char in new_password) or not any(char.isupper() for char in new_password) or not any(char.isdigit() for char in new_password) or not new_password.isalnum() or ' ' in new_password:
-            msg += 'Пароль должен удовлетворять всем указанным требованиям:<br>'\
-                   '- Пароль должен содержать как минимум одну заглавную букву.<br>'\
-                   '- Пароль должен содержать как минимум одну строчную букву.<br>'\
-                   '- Пароль должен содержать как минимум одну цифру.<br>'\
-                   '- Пароль не должен содержать пробелов.<br>'\
-                   '- Пароль не должен содержать спецсимволы.'
+        # Валидация нового пароля
+        if new_password:
+            if len(new_password) < 8 or len(new_password) > 128:
+                errors['password'] = 'Пароль должен быть не менее 8 и не более 128 символов.'
+            if not re.search(r'[A-Z]', new_password):
+                errors['password'] = errors.get('password', '') + ' Пароль должен содержать как минимум одну заглавную букву. '
+            if not re.search(r'[a-z]', new_password):
+                errors['password'] = errors.get('password', '') + ' Пароль должен содержать как минимум одну строчную букву. '
+            if not re.search(r'[0-9]', new_password):
+                errors['password'] = errors.get('password', '') + ' Пароль должен содержать как минимум одну цифру. '
+            if re.search(r'\s', new_password):
+                errors['password'] = errors.get('password', '') + ' Пароль не должен содержать пробелов. '
+            if not re.match(r'^[a-zA-Zа-яА-Я0-9~!?@#$%^&*_\-+()[\]{}><\/\\|"\'.,:;]*$', new_password):
+                errors['password'] = errors.get('password', '') + ' Пароль содержит недопустимые символы. '
         
         # Проверка совпадения паролей
         if new1_password != new_password:
-            msg += 'Пароли не совпадают. '
-        
-        if msg != '':
-            flash(msg, 'danger')
+            errors['match'] = 'Пароли не совпадают.'
+
+        if errors:
+            for key, error in errors.items():
+                flash(error, 'danger')
             return render_template('change_pass.html')
+
 
         try:
             conn = db.connect()  # Открываем соединение
@@ -295,6 +303,7 @@ def change_pass():
             # Обновляем пароль
             query = 'UPDATE users SET password_hash=%s WHERE login=%s'
             cursor.execute(query, (hashlib.sha256(new_password.encode()).hexdigest(), user_login))
+    
             conn.commit()  # Фиксируем изменения
 
             flash('Пароль успешно изменен', 'success')
