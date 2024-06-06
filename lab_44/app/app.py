@@ -257,7 +257,12 @@ def change_pass():
 
         # Проверка нового пароля
         if len(new_password) < 8 or len(new_password) > 128 or not any(char.islower() for char in new_password) or not any(char.isupper() for char in new_password) or not any(char.isdigit() for char in new_password) or not new_password.isalnum() or ' ' in new_password:
-            msg += 'Пароль должен удовлетворять всем указанным требованиям. '
+            msg += 'Пароль должен удовлетворять всем указанным требованиям:<br>'\
+                   '- Пароль должен содержать как минимум одну заглавную букву.<br>'\
+                   '- Пароль должен содержать как минимум одну строчную букву.<br>'\
+                   '- Пароль должен содержать как минимум одну цифру.<br>'\
+                   '- Пароль не должен содержать пробелов.<br>'\
+                   '- Пароль не должен содержать спецсимволы.'
         
         # Проверка совпадения паролей
         if new1_password != new_password:
@@ -299,5 +304,5 @@ def change_pass():
         finally:
             cursor.close()  # Закрываем курсор
             conn.close()    # Закрываем соединение
-
+        return redirect(url_for('list_users'))
     return render_template('change_pass.html')
